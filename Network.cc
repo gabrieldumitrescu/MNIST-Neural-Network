@@ -64,10 +64,10 @@ void Network::Layer::gradientDescent(Matrix& prevAct)
   m_weightsErr= m_errors *(prevAct.transpose());
 }
 
-void Network::Layer::updateParams(float etaM)
+void Network::Layer::updateParams(float etaM,float reg_factor)
 {
   m_biases=m_biases - (m_biasesErr * etaM);
-  m_weights = m_weights - (m_weightsErr * etaM);
+  m_weights = (m_weights * reg_factor) - (m_weightsErr * etaM);
   Matrix nBErr(m_biases.getNumRows(), 1);
   Matrix nWErr(m_weights.getNumRows(), m_weights.getNumCol());
   m_biasesErr = nBErr;
@@ -119,8 +119,9 @@ const Matrix& Network::Layer::getActivations() const
     The first layer is the input layer and has no weights and biases, activation values
     are provided as input for the network.
 */
-Network::Network(std::vector<size_t> &sizes):
-  layerSizes(sizes)
+Network::Network(std::vector<size_t> &sizes,NetworkParameters cfg):
+  layerSizes(sizes),
+  config(cfg)
   {
     size_t numNeurons=0;
     size_t numWeights=0;
@@ -160,6 +161,11 @@ Network::Network(std::vector<size_t> &sizes):
         else
         {
           Matrix weightsM(sizes[i],sizes[i-1],cW);
+          //optimize weights initialization
+          if(config.weightInitOpt)
+          {
+            weightsM=weightsM * (1.0f / sqrt((float)sizes[i-1]));
+          }
           Matrix biasesM(sizes[i],1,cB);
           Layer* current = new Layer(weightsM, biasesM, (i==sizes.size() - 1));
           layers.push_back(current);
@@ -243,20 +249,18 @@ Matrix Network::backpropagateError(Matrix& input, Matrix& desiredOut)
     of the folowing vectors:
       1. (a(L) - y)
       2. SigmoidPrime(z)
+    For the CrossEntropy cost function the error is just 1.
   */
   //1.
   Matrix first=feedForward(input) - desiredOut;
   //2.
   Matrix second=cLayer->getWeightedInputs();
-  // second.map(sigmoidPrime);
-  
-  //puts("a(L) - y:");
-  //outErr.print();
-  //puts("sp(wI):");
-  //wIErr.print();
-
-  //hadamard
-  // first = first.hadamard(second);
+  if(config.costFn == QuadraticCostFunction)
+  {
+    second.map(sigmoidPrime);
+    //hadamard
+    first = first.hadamard(second);  
+  }
   cLayer->setErrors(first);
   for (size_t i = layers.size() - 2; i >0; --i)
   {
@@ -299,8 +303,12 @@ void Network::gradientDescent(Matrix& input,
 
 void Network::trainNetwork(std::vector<Matrix>& inputs,
                            std::vector<Matrix>& outputs,
-                           float eta, size_t batchSz)
+                           float eta, size_t batchSz, float reg_factor)
 {
+  if(config.regType == NoRegularization)
+  {
+    reg_factor=1.0;
+  }
   for (size_t i = 0; i < inputs.size(); i+=batchSz)
   {
     for (size_t j = 0; j < batchSz; ++j)
@@ -311,7 +319,7 @@ void Network::trainNetwork(std::vector<Matrix>& inputs,
     {
       Layer* cLayer=layers[j];
       float fact=eta/((float) batchSz);
-      cLayer->updateParams(fact);
+      cLayer->updateParams(fact, reg_factor);
     }
   }
 }

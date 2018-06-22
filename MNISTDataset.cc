@@ -14,7 +14,7 @@ MNISTDataset::MNISTDataset(const char* trainLabelsFilename, const char* trainIma
   printf("Loaded %lu labels from file %s!\n", testLabels.size(), testLabelsFilename);
  loadImages(testImagesFilename, testImages);
   printf("Loaded %lu images from file %s!\n", testImages.size(), testImagesFilename);
-  
+
 }
 
 std::vector<ubyte>& MNISTDataset::getTestLabels()
