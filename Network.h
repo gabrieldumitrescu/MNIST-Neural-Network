@@ -20,6 +20,38 @@ struct NetworkFileHeader
   int numLayers;
 };
 
+typedef enum CostFunctionT
+{
+  QuadraticCostFunction,
+  CrossEntropyCostFunction
+} CostFunction;
+
+typedef enum RegularizationTypeT
+{
+  NoRegularization,
+  L1Regularization,
+  L2Regularization,
+  DropoutRegularization
+} RegularizationType;
+
+
+struct NetworkParameters
+{
+  CostFunction costFn;
+  RegularizationType regType;
+  bool weightInitOpt;
+  NetworkParameters():
+    costFn(CrossEntropyCostFunction),
+    regType(L2Regularization),
+    weightInitOpt(true)
+    {}
+  NetworkParameters(CostFunction c,RegularizationType t,bool weightOpt):
+    costFn(c),
+    regType(t),
+    weightInitOpt(weightOpt)
+    {}
+};
+
 /* Neural network class for MNIST digits recognition */
 class Network
 {
@@ -38,7 +70,7 @@ class Network
 
       Matrix feedForward(Matrix& prevAct);
       void gradientDescent(Matrix& prevAct);
-      void updateParams(float etaM);
+      void updateParams(float etaM, float reg_factor);
 
       Matrix getWeightedInputs() const;
       void setErrors(const Matrix& err);
@@ -48,10 +80,11 @@ class Network
       const Matrix& getActivations() const;
     };
 
+    NetworkParameters config;
     std::vector<size_t> layerSizes; // vector of sizes of the neuron layers
     std::vector<Layer*> layers;
   public:
-    Network(std::vector<size_t> &sizes);
+    Network(std::vector<size_t> &sizes,NetworkParameters cfg);
     Network(const std::string& filename);
 
     //print the biases vector and the weights matrix for each layer
@@ -75,7 +108,7 @@ class Network
     void gradientDescent(Matrix& input, Matrix& desiredOut);
     void trainNetwork(std::vector<Matrix>& inputs,
                       std::vector<Matrix>& outputs,
-                      float eta, size_t batchSz);
+                      float eta, size_t batchSz,float reg_factor);
     size_t predict(Matrix& input);
     size_t evaluate(std::vector<Matrix>& inputs,
                        std::vector<Matrix>& outputs);

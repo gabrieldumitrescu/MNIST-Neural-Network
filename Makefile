@@ -5,8 +5,8 @@ CXXFLAGS:=-std=c++11 -O3
 LD:=g++
 #LDFLAGS:=-pg
 LDFLAGS:=-lSDL2
-APP:=test
-SRCS:=test.cc Matrix.cc Network.cc MNISTImage.cc MNISTDataset.cc util.cc
+APP:=MnistAI
+SRCS:=MnistAI.cc Matrix.cc Network.cc MNISTImage.cc MNISTDataset.cc util.cc
 HDRS:=Matrix.h Network.h MNISTImage.h MNISTDataset.h util.h
 OBJS:=$(patsubst %.cc,%.o,$(SRCS))
 
